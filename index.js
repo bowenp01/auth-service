@@ -2,98 +2,100 @@
 //  Change Log
 //  Created : 23-DEC-2020
 //  Author : Paul Bowen
+//
+// This is the entry point for our auth REST service
+// It handles gracefully starting up and shutting down the
+// service.
 //=============================================================
 
 //-------------------------------------------------------------
 // Include all the third party modules we will need
 //-------------------------------------------------------------
-const path = require('path'); // Required for OS agnostic pathing
-const express = require('express'); // Takes care of routing and lots of other stuff
-const bodyParser = require('body-parser'); // Required to access the body of http requests
-const helmet = require('helmet'); // Some protection against known vulnerabilities
 const chalk = require('chalk'); // Beautify console output
-const config = require('config');
 
 //-------------------------------------------------------------
-// Include our own custom modules here
+// Include all our custom modules we will need
 //-------------------------------------------------------------
-const User = require('./models/user.js'); // We want our user model
-const authRoutes = require('./routes/authRoutes'); // Include our routing modules here.
+const service = require('./service'); // this is our REST service
 
 //-------------------------------------------------------------
-// When this service is hosted, eg.on Heroku a port will be
-// set by the host using environment variable 'PORT'.
-// Attempt to use this first and if not found default to
-// port 3000
+// Spin up our service
 //-------------------------------------------------------------
-const port = process.env.PORT || config.get('default-port');
+startup();
+
+//#region ' Handlng reasons for shutting down the service'
+//-------------------------------------------------------------
+// Signal recieved to shutdown application (eg. sent by 'kill')
+//-------------------------------------------------------------
+process.on("SIGTERM", () => {
+  console.log('');
+  console.log(chalk.white('Received SIGTERM'));
+  console.log('');
+  shutdown();
+});
 
 //-------------------------------------------------------------
-// Create an instance of express .. this will do all the 
-// heavy lifting for us
+// Signal recieved to shutdown application (eg. ctrl+c)
 //-------------------------------------------------------------
-const app = express();
+process.on("SIGINT", () => {
+  console.log('');
+  console.log(chalk.white('Received SIGINT'));
+  console.log('');
+  shutdown();
+});
 
 //-------------------------------------------------------------
-// Inject middleware into the request processing pipelene here
+// Error thrown and not handled
 //-------------------------------------------------------------
-app.use(helmet()); // Some protection against known vulnerabilities
-app.use(bodyParser.urlencoded({
-  extended: false
-})); // Support parsing of application/x-www-form-urlencoded post data
-app.use(bodyParser.json()); // Support parsing of application/json type post data
-app.use(express.static(path.join(__dirname, 'public'))); // Expose the public directory in case we need to serve any static content
+process.on("uncaughtException", err => {
+  console.log('');
+  console.log(chalk.red.bold('Uncaught exception'));
+  console.error(err);
+  shutdown(err);
+});
+//#endregion
 
+//#region 'Starting up and shutting down the service' 
 //-------------------------------------------------------------
-// Inject routing middleware into the request processing pipelene 
-// The order in which we inject the routing middlware is important!
+// An async method to spin up our application
 //-------------------------------------------------------------
-app.use(authRoutes);
-
-//-------------------------------------------------------------
-// Give the user some output so they know how the service is
-// configured to run 
-//-------------------------------------------------------------
-outputStartup();
-
-//-------------------------------------------------------------
-// Register a listner
-//-------------------------------------------------------------
-
-console.log(chalk.black.bgYellow.bold('Listening on port:' + port));
-console.log('');
-app.listen(port);
-
-
-
-function outputStartup() {
-  // Let the user know some of the settings which configure
-  // how the REST service is set up
-  // Chalk just lets us color and style the output
+async function startup() {
   console.clear();
-  console.log('');
-  console.log(chalk.white.bgBlue.bold(config.get('name')));
-  console.log(chalk.white.bgBlue.bold(config.get('author')));
-  console.log('');
-  console.log(chalk.white.bold('Checking environment variables:'));
-  console.log('');
-  console.log(chalk.white.bold('DEBUG: ') + process.env.DEBUG);
-  if (!process.env.DEBUG) {
-    console.log(chalk.gray.italic('\tDebug log to console disabled. See documentation for possible DEBUG values'));
-  };
-  console.log(chalk.white.bold('NODE_ENV: ') + process.env.NODE_ENV);
-  if (!process.env.NODE_ENV) {
-    console.log(chalk.grey.italic('\tNODE_ENV not set. Using configuration from default.json'));
+  console.log(chalk.white('Starting service'));
+
+  // Initialize our web server
+  try {
+    console.log(chalk.white('Initializing ...'));
+    await service.initialize();
+  } catch (err) {
+    console.error(err);
+    process.exit(1); // Non-zero failure code
   }
-  console.log(chalk.white.bold('PORT: ') + process.env.PORT);
-  if (!process.env.PORT) {
-    console.log(chalk.gray.italic('\tValue undefined. Using default port :') + chalk.white(port))
-  }
-  console.log('');
-  console.log(chalk.white.bold('Database setup from configuration file:'));
-  console.log('');
-  console.log(chalk.white.bold('DATABASE-MODULE: ') + config.get('database-module'));
-  console.log(chalk.white.bold('CONNECTION-STRING: ') + config.get('connection-string'));
-  console.log('');
-  return;
 }
+
+//-------------------------------------------------------------
+// An async method to shut down our application gracefully
+//-------------------------------------------------------------
+async function shutdown(e) {
+  let err = e;
+
+  console.log(chalk.white.bold('Shutting down'));
+
+  // Close the service gracefully
+  try {
+    console.log(chalk.white('Cleaning up resources'));
+    await service.close();
+  } catch (e) {
+    console.log(chalk.red('Encountered error'), e);
+    err = err || e;
+  }
+
+  console.log(chalk.white('Exiting process'));
+
+  if (err) {
+    process.exit(1); // Non-zero failure code
+  } else {
+    process.exit(0);
+  }
+}
+//#endregion

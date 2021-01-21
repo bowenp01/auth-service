@@ -37,6 +37,7 @@ function postLogin(req, res, next) {
   const ak = req.body.key; // Application Key (Issued by us)
   const rst = req.body.returnSecureToken; // True/False
 
+  //#region 'Validating user data'
   //-------------------------------------------------------------
   // Define schema for input validation.
   // We can build more rules into this as we need to.
@@ -76,6 +77,7 @@ function postLogin(req, res, next) {
   } else {
     controllerDebugger('Validation successfull');
   }
+  //#endregion
 
   // Check application key is valid
   // [TODO]
