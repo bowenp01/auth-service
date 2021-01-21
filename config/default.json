@@ -1,0 +1,7 @@
+{
+    "name":     "  Authorisation REST Service (DEV)     ",
+    "author":   "  Paul Bowen - 2021                    ",
+    "default-port": 3000,
+    "database-module":"mongoDbController",
+    "connection-string":"some-connection-string"
+}
