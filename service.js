@@ -17,7 +17,6 @@ const config = require('config'); // will use settings from config/*.json based 
 //-------------------------------------------------------------
 // Include our own custom modules here
 //-------------------------------------------------------------
-//const User = require('./models/user.js'); // We want our user model
 const authRoutes = require('./routes/authRoutes'); // Include our routing modules here.
 
 let app; // Needs to be public scope within the module
@@ -28,7 +27,7 @@ let port; // Needs to be public scope within the module
 //-------------------------------------------------------------
 function initialize() {
     return new Promise((resolve, reject) => {
-
+        console.log(chalk.white('Initializing request pipeline'));
         //-------------------------------------------------------------
         // When this service is hosted, eg.on Heroku a port will be
         // set by the host using environment variable 'PORT'.
@@ -88,6 +87,7 @@ function initialize() {
 function close() {
     return new Promise((resolve, reject) => {
         // [TODO] Cleanup any resources here
+        console.log(chalk.white('Cleaning up service resources'));
         resolve();
     });
 }

@@ -11,12 +11,15 @@
 //-------------------------------------------------------------
 // Include all the third party modules we will need
 //-------------------------------------------------------------
+require('dotenv').config(); // Always do this first. It will load environment variables from he .env file
 const chalk = require('chalk'); // Beautify console output
+const config = require('config'); // will use settings from config/*.json based on NODE_ENV
 
 //-------------------------------------------------------------
 // Include all our custom modules we will need
 //-------------------------------------------------------------
 const service = require('./service'); // this is our REST service
+const database = require(`./database/${config.get('database-module')}`); // Defined in the config files
 
 //-------------------------------------------------------------
 // Spin up our service
@@ -61,11 +64,23 @@ process.on("uncaughtException", err => {
 //-------------------------------------------------------------
 async function startup() {
   console.clear();
-  console.log(chalk.white('Starting service'));
+  console.log(chalk.white('Loading Auth service'));
+  try {
+    await database.initialize();
+  } catch {
+    console.error(err);
+    process.exit(1) // Non-zero failure code
+  }
+
+  /*   try {
+      await database.insertKey();
+    } catch {
+      console.error(err);
+      process.exit(1) // Non-zero failure code  
+    } */
 
   // Initialize our web server
   try {
-    console.log(chalk.white('Initializing ...'));
     await service.initialize();
   } catch (err) {
     console.error(err);
@@ -83,7 +98,7 @@ async function shutdown(e) {
 
   // Close the service gracefully
   try {
-    console.log(chalk.white('Cleaning up resources'));
+    await database.close();
     await service.close();
   } catch (e) {
     console.log(chalk.red('Encountered error'), e);

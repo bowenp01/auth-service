@@ -1,5 +1,5 @@
 {
     "name":     "  Authorisation REST Service (PROD)    ",
-    "database-module":"oracleDbController",
+    "database-module":"oracleDb",
     "connection-string":"some-connection-string"
 }

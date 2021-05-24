@@ -22,13 +22,15 @@ const {
   v4: uuidv4
 } = require('uuid'); // Used to generate a session Id
 const Joi = require('joi'); // Schema validation -- will validate user data
+const config = require('config'); // will use settings from config/*.json based on NODE_ENV
 
 //-------------------------------------------------------------
 // Include our own custom modules here
 //-------------------------------------------------------------
 const User = require('../models/user'); // our user model
+const database = require(`../database/${config.get('database-module')}`); // Defined in the config files
 
-function postLogin(req, res, next) {
+async function postLogin(req, res, next) {
   //-------------------------------------------------------------
   // Get user data from key value pairs in request body
   //-------------------------------------------------------------
@@ -40,7 +42,7 @@ function postLogin(req, res, next) {
   //#region 'Validating user data'
   //-------------------------------------------------------------
   // Define schema for input validation.
-  // We can build more rules into this as we need to.
+  // We can build more complex rules into this as needed.
   //-------------------------------------------------------------
   controllerDebugger('Creating validation schema');
   const schema = Joi.object({
@@ -79,36 +81,87 @@ function postLogin(req, res, next) {
   }
   //#endregion
 
-  // Check application key is valid
-  // [TODO]
 
-  // Check username is whitelisted * FOR APPLICATION DEFINED BY KEY *
-  // [TODO]
+  let useWhiteList = false;
+  let keyVerified = false;
+
+  // Check application key is valid
+  try {
+    keyVerified = await database.checkApplicationKey(ak, useWhiteList);
+    if (keyVerified == false) {
+      const keyFailBody = {};
+      keyFailBody.error = 'No matching application key found';
+      res.status(200).json(keyFailBody);
+      controllerDebugger('authController : No matching application key found');
+      return;
+    }
+  } catch (error) {
+    const keyFailBody = {};
+    keyFailBody.error = 'Could not read from MongoDB';
+    res.status(200).json(keyFailBody);
+    controllerDebugger('authController : Could not read application key from MongoDB');
+    return;
+  }
+
+  // If application uses a whitelist then we need to check the user is on it
+  if (useWhiteList) {
+    let whiteListed = false;
+    try {
+      whiteListed = await database.checkWhiteList(un, ak);
+      if (whitelisted == false) {
+        const whitelistFailBody = {};
+        whitelistFailBody.error = 'User not whitelisted for this application';
+        res.status(200).json(whitelistFailBody);
+        controllerDebugger('authController : User not whitelisted for this application');
+        return;
+      }
+    } catch (error) {
+      const whitelistFailBody = {};
+      whitelistFailBody.error = 'Could not read from MongoDB';
+      res.status(200).json(whitelistFailBody);
+      controllerDebugger('authController : Could not read whitelist from MongoDB');
+      return;
+    }
+  }
 
   // If we have arrived here then we have all the required credentials, user
   // is allowed to use this application and the application is registered with
   // the auth service (and was issued a valid application key).
 
   // Use Active Directory to authenticate the username and password
-  adHelper.AuthenticateUser(un, pw, (success, error) => {
+  adHelper.AuthenticateUser(un, pw, async (success, error) => {
     if (success) {
       // Sucessfully authenticated the user
       const sessionId = uuidv4(); // UUIDv4 is a random token
       const secondsToExpiry = 300; // Seconds until the session expires
-      // [TODO] write the sessionId and it's timeout to our database
+
+      // Write the sessionId and it's timeout to our database
+      try {
+        await database.insertSession(sessionId, secondsToExpiry);
+      } catch (error) {
+        // 
+        const mongoFailBody = {};
+        mongoFailBody.error = 'Could not write to MongoDB';
+        res.status(200).json(mongoFailBody);
+        controllerDebugger('authController : Could not write to MongoDB');
+        return;
+      }
+
+
       const successBody = {};
       successBody.secureToken = sessionId;
       successBody.localId = un;
       successBody.expiresIn = secondsToExpiry;
       res.status(200).json(successBody);
       controllerDebugger('authController : Authenticated user');
+      return;
     } else {
       // Could not authenticate user with credentials provided
       const failBody = {};
       failBody.error = error.message;
       res.status(error.code).json(failBody);
       controllerDebugger('authController : Could not authenticate user');
-
+      return;
     }
   });
 };

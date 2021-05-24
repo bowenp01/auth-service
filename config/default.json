@@ -2,6 +2,6 @@
     "name":     "  Authorisation REST Service (DEV)     ",
     "author":   "  Paul Bowen - 2021                    ",
     "default-port": 3000,
-    "database-module":"mongoDbController",
-    "connection-string":"some-connection-string"
+    "database-module":"mongodb",
+    "connection-string":"mongodb+srv://<USERNAME>:<PASSWORD>@pb-cluster0.bk6vk.mongodb.net/Auth?retryWrites=true&w=majority"
 }
