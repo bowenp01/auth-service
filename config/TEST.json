@@ -1,8 +1,5 @@
 {
     "name":     "  AUTH REST Service (TEST database)     ",
-    "author":   "  Paul Bowen - 2021                          ",
-    "default-port": 3100,
-    "jwtPrivateKey":"",
     "database":"Oracle",
     "connection-string":"(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=10.59.9.39)(PORT=1521))(CONNECT_DATA=(SID=PMSTestPH)))"
 }

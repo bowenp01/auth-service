@@ -1,9 +1,9 @@
 //=============================================================
 //  Change Log
-//  Created : 23-DEC-2020
+//  Created : 21-MAY-2021
 //  Author : Paul Bowen
 //
-// This is the entry point for our auth REST service
+// This is the entry point for our CIT REST service
 // It handles gracefully starting up and shutting down the
 // service.
 //=============================================================
@@ -11,16 +11,23 @@
 //-------------------------------------------------------------
 // Include all the third party modules we will need
 //-------------------------------------------------------------
-require('dotenv').config(); // Always do this first. It will load environment variables from he .env file
-const chalk = require('chalk'); // Beautify console output
-const config = require('config'); // will use settings from config/*.json based on NODE_ENV
+require("dotenv").config(); // Always do this first. It will load environment variables from the .env file
+const config = require("config"); // will use settings from config/*.json based on NODE_ENV
+const chalk = require("chalk"); // Beautify console output
 
 //-------------------------------------------------------------
 // Include all our custom modules we will need
 //-------------------------------------------------------------
-const service = require('./service'); // this is our REST service
-const database = require(`./database/${config.get('database-module')}`); // Defined in the config files
+const service = require("./service"); // this is our REST service
+const database = require(`./database/${config.get("database")}/database`); // Defined in the config files
 
+//-------------------------------------------------------------
+// iF there's no jwtPrivateKey defined shut down immediatley
+//-------------------------------------------------------------
+if (!config.get("jwtPrivateKey")) {
+  console.log(chalk.red("FATAL ERROR: jwtPrivateKey is not defined"));
+  process.exit(1);
+}
 //-------------------------------------------------------------
 // Spin up our service
 //-------------------------------------------------------------
@@ -31,9 +38,9 @@ startup();
 // Signal recieved to shutdown application (eg. sent by 'kill')
 //-------------------------------------------------------------
 process.on("SIGTERM", () => {
-  console.log('');
-  console.log(chalk.white('Received SIGTERM'));
-  console.log('');
+  console.log("");
+  console.log(chalk.white("Received SIGTERM"));
+  console.log("");
   shutdown();
 });
 
@@ -41,43 +48,38 @@ process.on("SIGTERM", () => {
 // Signal recieved to shutdown application (eg. ctrl+c)
 //-------------------------------------------------------------
 process.on("SIGINT", () => {
-  console.log('');
-  console.log(chalk.white('Received SIGINT'));
-  console.log('');
+  console.log("");
+  console.log(chalk.white("Received SIGINT"));
+  console.log("");
   shutdown();
 });
 
 //-------------------------------------------------------------
 // Error thrown and not handled
 //-------------------------------------------------------------
-process.on("uncaughtException", err => {
-  console.log('');
-  console.log(chalk.red.bold('Uncaught exception'));
+process.on("uncaughtException", (err) => {
+  console.log("");
+  console.log(chalk.red.bold("Uncaught exception"));
   console.error(err);
   shutdown(err);
 });
 //#endregion
 
-//#region 'Starting up and shutting down the service' 
+//#region 'Starting up and shutting down the service'
 //-------------------------------------------------------------
 // An async method to spin up our application
 //-------------------------------------------------------------
 async function startup() {
   console.clear();
-  console.log(chalk.white('Loading Auth service'));
+  console.log(chalk.white("Loading Register service"));
+
+  // Initialise our database
   try {
     await database.initialize();
   } catch {
     console.error(err);
-    process.exit(1) // Non-zero failure code
+    process.exit(1); // Non-zero failure code
   }
-
-  /*   try {
-      await database.insertKey();
-    } catch {
-      console.error(err);
-      process.exit(1) // Non-zero failure code  
-    } */
 
   // Initialize our web server
   try {
@@ -94,18 +96,18 @@ async function startup() {
 async function shutdown(e) {
   let err = e;
 
-  console.log(chalk.white.bold('Shutting down'));
+  console.log(chalk.white.bold("Shutting down"));
 
   // Close the service gracefully
   try {
     await database.close();
     await service.close();
   } catch (e) {
-    console.log(chalk.red('Encountered error'), e);
+    console.log(chalk.red("Encountered error"), e);
     err = err || e;
   }
 
-  console.log(chalk.white('Exiting process'));
+  console.log(chalk.white("Exiting process"));
 
   if (err) {
     process.exit(1); // Non-zero failure code

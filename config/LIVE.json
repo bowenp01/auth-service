@@ -1,0 +1,5 @@
+{
+    "name":     "  AUTH REST Service (LIVE Database)    ",
+    "database":"Oracle",
+    "connection-string":"(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=10.59.9.31)(PORT=1521))(CONNECT_DATA =(SID = PMSLPH)))"
+}

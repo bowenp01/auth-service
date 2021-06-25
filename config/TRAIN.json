@@ -1,0 +1,5 @@
+{
+    "name":     "  AUTH REST Service (TRAINING database)    ",
+    "database":"Oracle",
+    "connection-string":"(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=10.59.9.39)(PORT=1522))(CONNECT_DATA =(SID = PMSTrainPH)))"
+}

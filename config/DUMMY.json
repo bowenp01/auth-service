@@ -1,0 +1,5 @@
+{
+    "name":     "  AUTH REST Service (DUMMY)    ",
+    "database":"Dummy",
+    "connection-string":"none"
+}

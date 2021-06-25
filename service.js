@@ -17,7 +17,9 @@ const config = require('config'); // will use settings from config/*.json based 
 //-------------------------------------------------------------
 // Include our own custom modules here
 //-------------------------------------------------------------
-const authRoutes = require('./routes/authRoutes'); // Include our routing modules here.
+const authRoute = require('./routes/authRoute'); // Include our routing modules here.
+const heartbeatRoute = require('./routes/heartbeatRoute');
+require('./utilities/timeStarted').getTimestamp();
 
 let app; // Needs to be public scope within the module
 let port; // Needs to be public scope within the module
@@ -46,9 +48,6 @@ function initialize() {
         // Inject middleware into the request processing pipelene here
         //-------------------------------------------------------------
         app.use(helmet()); // Some protection against known vulnerabilities
-        app.use(bodyParser.urlencoded({
-            extended: false
-        })); // Support parsing of application/x-www-form-urlencoded post data
         app.use(bodyParser.json()); // Support parsing of application/json type post data
         app.use(express.static(path.join(__dirname, 'public'))); // Expose the public directory in case we need to serve any static content
 
@@ -56,7 +55,8 @@ function initialize() {
         // Inject routing middleware into the request processing pipelene 
         // The order in which we inject the routing middlware is important!
         //-------------------------------------------------------------
-        app.use(authRoutes);
+        app.use(authRoute);
+        app.use(heartbeatRoute);
 
         //-------------------------------------------------------------
         // Give the user some output so they know how the service is
@@ -119,7 +119,7 @@ function outputStartup() {
     console.log('');
     console.log(chalk.white.bold('Database setup from configuration file:'));
     console.log('');
-    console.log(chalk.white.bold('DATABASE-MODULE: ') + config.get('database-module'));
+    console.log(chalk.white.bold('DATABASE: ') + config.get('database'));
     console.log(chalk.white.bold('CONNECTION-STRING: ') + config.get('connection-string'));
     console.log('');
     return;

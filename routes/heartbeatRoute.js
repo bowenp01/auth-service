@@ -1,15 +1,15 @@
 //--------------------------------------------------------------------------------
 //  Change Log
-//  Created : 23-DEC-2020
+//  Created : 09-JUN-2021
 //  Author : Paul Bowen
 //--------------------------------------------------------------------------------
 
 const path = require('path');
 const express = require('express');
-const authController = require('../controllers/authController');
+const heartbeatController = require('../controllers/heartbeatController');
 
 const router = express.Router();
 
-router.post('/auth/login', authController.postLogin);
+router.get('/heartbeat', heartbeatController.getHeartbeat);
 
 module.exports = router;

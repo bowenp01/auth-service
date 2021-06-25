@@ -1,13 +1,14 @@
 //--------------------------------------------------------------------------------
 //  Change Log
-//  Created : 23-DEC-2020
+//  Created : 09-JUN-2021
 //  Author : Paul Bowen
 //--------------------------------------------------------------------------------
 
-module.exports = class user {
-    constructor(userName, fullName, email) {
-        this.userName = userName;
-        this.fullName = fullName;
-        this.email = email;
+var startTimestamp;
+
+module.exports.getTimestamp = function () {
+    if (!startTimestamp) {
+        startTimestamp = new Date();
     }
-}
+    return startTimestamp;
+};
