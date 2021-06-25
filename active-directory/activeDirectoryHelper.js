@@ -6,6 +6,8 @@
 
 // Include the package
 const ADDebugger = require("debug")("app:controllers"); // Use this instead of console.log() so we can controll debug info
+
+const User = require("../models/user");
 let ActiveDirectory = require("activedirectory");
 
 // This will hold our instance of an active directory
@@ -52,7 +54,7 @@ function NadexAuthenticateUser(sAMAccountName, password, callback) {
       // Something went wrong
       ADDebugger("activeDirectoryHelper - Active directory error: ");
       ADDebugger(JSON.stringify(err));
-      callback(false);
+      callback(false, null);
       return;
     }
 
@@ -61,13 +63,34 @@ function NadexAuthenticateUser(sAMAccountName, password, callback) {
       ADDebugger(
         "activeDirectoryHelper - Authentication Failed : " + sAMAccountName
       );
-      callback(false);
+      callback(false, null);
     } else {
       // OK .. we authenticated the given credentials
       ADDebugger(
         "activeDirectoryHelper - Authentication Success : " + sAMAccountName
       );
-      callback(true);
+
+      // Now get some additional detail to add to the user object
+      _ad.findUser(sAMAccountName, function (err, user) {
+        if (err) {
+          callback(false, null);
+          return;
+        }
+        if (!user) {
+          callback(false, null);
+          return;
+        } else {
+          let nadexuser = new User(
+            sAMAccountName,
+            user.givenName + " " + user.sn,
+            user.mail,
+            "",
+            []
+          );
+          callback(true, nadexuser);
+          return;
+        }
+      });
     }
   });
 }

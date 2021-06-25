@@ -33,6 +33,7 @@ const { checkApplicationKey } = require(`../database/${config.get(
 const { authoriseLocal } = require(`../database/${config.get(
   "database"
 )}/authorise`); // Defined in the config files
+const User = require("../models/user");
 
 async function postLogin(req, res, next) {
   //-------------------------------------------------------------
@@ -119,9 +120,9 @@ async function postLogin(req, res, next) {
 
   if (cs === CredentialSetEnum.ACTIVEDIRECTORY) {
     // Active Directory credential set
-    adHelper.AuthenticateUser(un, pw, (authorised) => {
+    adHelper.AuthenticateUser(un, pw, (authorised, user) => {
       if (authorised) {
-        const token = jwt.sign({ username: un }, config.get("jwtPrivateKey"));
+        const token = user.getJWT(); //jwt.sign({ username: un }, config.get("jwtPrivateKey"));
         const successBody = {};
 
         successBody.accessed = new Date(); // This is UTC dateTime!
@@ -140,9 +141,9 @@ async function postLogin(req, res, next) {
     });
   } else {
     // Local credential set
-    authoriseLocal(un, pw, (authorised) => {
+    authoriseLocal(un, pw, (authorised, user) => {
       if (authorised) {
-        const token = jwt.sign({ username: un }, config.get("jwtPrivateKey"));
+        const token = user.getJWT(); //jwt.sign({ username: un }, config.get("jwtPrivateKey"));
         const successBody = {};
         successBody.accessed = new Date(); // This is UTC dateTime!
         res.header("x-auth-token", token);

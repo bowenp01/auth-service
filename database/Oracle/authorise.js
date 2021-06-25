@@ -14,8 +14,9 @@
 
 const database = require("./database.js");
 const controllerDebugger = require("debug")("app:controllers");
+const User = require("../../models/user");
 
-unSql = `select userid from pmsusers where upper(username)=:username`;
+unSql = `select userid, name, department from pmsusers where upper(username)=:username`;
 pwSql = `select password from pmsusers where userid = :userid and date_to is null`;
 
 async function authoriseLocal(un, pw, callback) {
@@ -23,6 +24,8 @@ async function authoriseLocal(un, pw, callback) {
   const unBinds = {};
   const pwBinds = {};
   let userid;
+  let fullname;
+  let department;
   let password;
   unBinds.username = un.toUpperCase();
 
@@ -34,15 +37,17 @@ async function authoriseLocal(un, pw, callback) {
     // no userId found .. authentication fail
     if (result.rows.count == 0) {
       controllerDebugger("Username invalid: " + un);
-      callback(false);
+      callback(false, null);
     }
 
     // Got a userId
     userid = result.rows[0].USERID;
+    fullname = result.rows[0].NAME;
+    department = result.rows[0].DEPARTMENT;
     controllerDebugger("userId for " + un + " is " + userid);
   } catch (error) {
     controllerDebugger(error.message);
-    callback(false);
+    callback(false, null);
   }
 
   pwBinds.userid = userid;
@@ -54,7 +59,7 @@ async function authoriseLocal(un, pw, callback) {
     // no password found .. authentication fail
     if (result.rows.count == 0) {
       controllerDebugger("Password expired");
-      callback(false);
+      callback(false, null);
     }
     password = result.rows[0].PASSWORD;
     decryptedPassword = decrypt(password);
@@ -62,14 +67,17 @@ async function authoriseLocal(un, pw, callback) {
     controllerDebugger("Descrypted Password: " + decryptedPassword);
     if (decryptedPassword.toUpperCase() === pw.toUpperCase()) {
       controllerDebugger("Passwords match");
-      callback(true);
+      // Populate the user object to pass to the callback method (roles are empty for now)
+      let user = new User(un, fullname, '', department, []);
+
+      callback(true, user);
     } else {
       controllerDebugger("Passwords do not match");
-      callback(false);
+      callback(false, null);
     }
   } catch (error) {
     controllerDebugger(error.message);
-    callback(false);
+    callback(false, null);
   }
 
   return;
