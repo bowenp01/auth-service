@@ -24,7 +24,8 @@ module.exports = class User {
         department: this.department,
         roles: this.roles,
       },
-      config.get("jwtPrivateKey")
+      config.get("jwtPrivateKey"),
+      { expiresIn: "24h" }
     );
     return token;
   }
