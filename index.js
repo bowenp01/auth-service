@@ -76,7 +76,7 @@ async function startup() {
   // Initialise our database
   try {
     await database.initialize();
-  } catch {
+  } catch (err) {
     console.error(err);
     process.exit(1); // Non-zero failure code
   }

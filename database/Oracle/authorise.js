@@ -35,9 +35,10 @@ async function authoriseLocal(un, pw, callback) {
     // execute sql
     const result = await database.simpleExecute(unSql, unBinds);
     // no userId found .. authentication fail
-    if (result.rows.count == 0) {
+    if (result.rows.length == 0) {
       controllerDebugger("Username invalid: " + un);
       callback(false, null);
+      return;
     }
 
     // Got a userId
@@ -48,6 +49,7 @@ async function authoriseLocal(un, pw, callback) {
   } catch (error) {
     controllerDebugger(error.message);
     callback(false, null);
+    return;
   }
 
   pwBinds.userid = userid;
@@ -57,9 +59,10 @@ async function authoriseLocal(un, pw, callback) {
     // execute sql
     const result = await database.simpleExecute(pwSql, pwBinds);
     // no password found .. authentication fail
-    if (result.rows.count == 0) {
+    if (result.rows.length == 0) {
       controllerDebugger("Password expired");
       callback(false, null);
+      return;
     }
     password = result.rows[0].PASSWORD;
     decryptedPassword = decrypt(password);
@@ -68,16 +71,19 @@ async function authoriseLocal(un, pw, callback) {
     if (decryptedPassword.toUpperCase() === pw.toUpperCase()) {
       controllerDebugger("Passwords match");
       // Populate the user object to pass to the callback method (roles are empty for now)
-      let user = new User(un, fullname, '', department, []);
+      let user = new User(un, fullname, "", department, []);
 
       callback(true, user);
+      return;
     } else {
       controllerDebugger("Passwords do not match");
       callback(false, null);
+      return;
     }
   } catch (error) {
     controllerDebugger(error.message);
     callback(false, null);
+    return;
   }
 
   return;
